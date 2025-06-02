@@ -221,8 +221,8 @@ export const test = base.extend<
               ]),
             ],
             {
-              // stdio: "pipe",
-              shell: os.platform() === "win32",
+              stdio: "pipe",
+              shell: false,
             }
           );
           subProcess.on("exit", (code, signal) => {
