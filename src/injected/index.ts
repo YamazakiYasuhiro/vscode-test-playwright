@@ -10,6 +10,8 @@ import * as vscode from "vscode";
 import { WebSocket, WebSocketServer } from "ws";
 import { EOL } from "os";
 
+process.stderr.write("injected/index.ts top-level code executed\n");
+
 class VSCodeTestServer {
   private _ws: WebSocket;
   private _lastObjectId = 0;
@@ -22,6 +24,7 @@ class VSCodeTestServer {
 
   constructor(ws: WebSocket) {
     this._ws = ws;
+    process.stderr.write("injected/index.ts VSCodeTestServer constructor\n");
   }
 
   async run() {
@@ -168,6 +171,7 @@ class VSCodeTestServer {
 }
 
 export async function run() {
+  process.stderr.write("injected/index.ts run\n");
   const server = createServer();
   const wsServer = new WebSocketServer({ server });
   try {
@@ -186,7 +190,6 @@ export async function run() {
     });
     const testServer = new VSCodeTestServer(ws);
     await testServer.run();
-  } catch (e) {
   } finally {
     wsServer.close();
     server.close();
