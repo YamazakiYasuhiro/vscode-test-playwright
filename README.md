@@ -17,7 +17,6 @@ Let's show some kitten love:
 
 See the example in [examples/custom-editor-sample/tests/draw.spec.ts](https://github.com/ruifigueira/vscode-test-playwright/blob/main/examples/custom-editor-sample/tests/draw.spec.ts).
 
-
 ## Core Features
 
 - Unified Test Runner:
@@ -29,6 +28,7 @@ See the example in [examples/custom-editor-sample/tests/draw.spec.ts](https://gi
 - VSCode API Calls:
   - Allows programmatic interaction with VSCode APIs to simulate user actions or access internal state.
 - Trace Generation:
+
   - Captures detailed information about test execution, including screenshots, network requests, and console logs.
   - Facilitates debugging and troubleshooting.
 
@@ -48,30 +48,33 @@ npm install --save-dev @playwright/test@latest vscode-test-playwright@latest
 - edit `playwright.config.ts`:
 
 ```ts
-import type { VSCodeTestOptions, VSCodeWorkerOptions } from 'vscode-test-playwright';
-import { defineConfig } from '@playwright/test';
-import path from 'path';
+import type {
+  VSCodeTestOptions,
+  VSCodeWorkerOptions,
+} from "vscode-test-playwright";
+import { defineConfig } from "@playwright/test";
+import path from "path";
 
 export default defineConfig<VSCodeTestOptions, VSCodeWorkerOptions>({
-  testDir: path.join(__dirname, 'tests'),
+  testDir: path.join(__dirname, "tests"),
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1,
-  reporter: 'html',
+  reporter: "html",
   use: {
     // path to your extension folder, where its package.json is located
     extensionDevelopmentPath: __dirname,
-    vscodeTrace: 'on',
+    vscodeTrace: "on",
   },
   projects: [
     {
-      name: 'insiders',
-      use: { vscodeVersion: 'insiders' },
+      name: "insiders",
+      use: { vscodeVersion: "insiders" },
     },
     {
-      name: '1.91.0',
-      use: { vscodeVersion: '1.91.0' },
+      name: "1.91.0",
+      use: { vscodeVersion: "1.91.0" },
     },
   ],
 });
@@ -80,18 +83,25 @@ export default defineConfig<VSCodeTestOptions, VSCodeWorkerOptions>({
 - create a test file `tests/basic.spec.ts`:
 
 ```ts
-import { expect, test } from 'vscode-test-playwright';
+import { expect, test } from "vscode-test-playwright";
 
-test('should show a message', async ({ workbox, evaluateInVSCode }) => {
-  await evaluateInVSCode(vscode => {
-    vscode.window.showInformationMessage('Hello, World!');
+test("should show a message", async ({ workbox, evaluateInVSCode }) => {
+  await evaluateInVSCode((vscode) => {
+    vscode.window.showInformationMessage("Hello, World!");
   });
 
-  const toast = workbox.locator('.notification-toast', { hasNot: workbox.getByRole('button', { name: 'Install' }) });
-  await expect(toast.locator('.notification-list-item-icon')).toHaveClass(/codicon-info/);
-  await expect(toast.locator('.notification-list-item-message')).toContainText('Hello, World!');
+  const toast = workbox.locator(".notification-toast", {
+    hasNot: workbox.getByRole("button", { name: "Install" }),
+  });
+  await expect(toast.locator(".notification-list-item-icon")).toHaveClass(
+    /codicon-info/
+  );
+  await expect(toast.locator(".notification-list-item-message")).toContainText(
+    "Hello, World!"
+  );
 });
 ```
+
 - run it:
 
 ```bash
@@ -108,8 +118,7 @@ Generated report will include playwright traces from VS Code, which can be very 
 It's possible to record actions on VS Code using Playwright's `codegen`. To launch it, simply add the `_enableRecorder` fixture to your test:
 
 ```ts
-test('create file', async ({ page, _enableRecorder }) => {
-});
+test("create file", async ({ page, _enableRecorder }) => {});
 ```
 
 ## API
@@ -122,20 +131,27 @@ Receives and evaluates a function in the context of VS Code. It has access to `v
 So, for instance, it's possible to execute a command:
 
 ```ts
-test('execute command', async ({ evaluateInVSCode }) => {
-  await evaluateInVSCode(vscode => vscode.commands.executeCommand('vscode.open', Uri.file('/some/path/to/folder')));
+test("execute command", async ({ evaluateInVSCode }) => {
+  await evaluateInVSCode((vscode) =>
+    vscode.commands.executeCommand(
+      "vscode.open",
+      Uri.file("/some/path/to/folder")
+    )
+  );
 });
 ```
 
 It's also possible to pass a [serializable](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify#description) or handle argument, and return a serializable value, either as a promise or not:
 
 ```ts
-test('ensure editor is open', async ({ evaluateInVSCode }) => {
+test("ensure editor is open", async ({ evaluateInVSCode }) => {
   const openUris = await evaluateInVSCode(async (vscode, path) => {
-    await vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(path));
-    return vscode.window.visibleTextEditors.map(e => e.document.uri.toString());
-  }, 'untitled:/empty.txt');
-  expect(openUris).toEqual(['untitled:/empty.txt']);
+    await vscode.commands.executeCommand("vscode.open", vscode.Uri.parse(path));
+    return vscode.window.visibleTextEditors.map((e) =>
+      e.document.uri.toString()
+    );
+  }, "untitled:/empty.txt");
+  expect(openUris).toEqual(["untitled:/empty.txt"]);
 });
 ```
 
@@ -148,16 +164,23 @@ It's the equivalent of playwright's [evaluateHandle](https://playwright.dev/docs
 For instance, here's an example where we get as editor handle and then write text into it:
 
 ```ts
-test('write text into new document', async ({ evaluateHandleInVSCode, evaluateInVSCode }) => {
+test("write text into new document", async ({
+  evaluateHandleInVSCode,
+  evaluateInVSCode,
+}) => {
   const editorHandle = await evaluateHandleInVSCode(async (vscode, path) => {
-		return await vscode.window.showTextDocument(vscode.Uri.parse(path));
-  }, 'untitled:/hello.txt');
+    return await vscode.window.showTextDocument(vscode.Uri.parse(path));
+  }, "untitled:/hello.txt");
 
   await evaluateInVSCode(async (vscode, editor) => {
-    await editor.edit(edit => edit.insert(new vscode.Position(0, 0), 'Hello, World!'));
+    await editor.edit((edit) =>
+      edit.insert(new vscode.Position(0, 0), "Hello, World!")
+    );
   }, editorHandle);
 
-  const text = await editorHandle.evaluate(editor => editor.document.getText());
+  const text = await editorHandle.evaluate((editor) =>
+    editor.document.getText()
+  );
 
   expect(text).toBe(`Hello, World!`);
 });
@@ -196,29 +219,54 @@ Events should be [serializable](https://developer.mozilla.org/en-US/docs/Web/Jav
 An example:
 
 ```ts
-test('listen to document changes', async ({ evaluateHandleInVSCode, evaluateInVSCode }) => {
+test("listen to document changes", async ({
+  evaluateHandleInVSCode,
+  evaluateInVSCode,
+}) => {
   const editorHandle = await evaluateHandleInVSCode(async (vscode, path) => {
-		return await vscode.window.showTextDocument(vscode.Uri.parse(path));
-  }, 'untitled:/hello.txt');
+    return await vscode.window.showTextDocument(vscode.Uri.parse(path));
+  }, "untitled:/hello.txt");
 
-  const documentChangedHandle = await evaluateHandleInVSCode(async vscode => {
+  const documentChangedHandle = await evaluateHandleInVSCode(async (vscode) => {
     const documentChanged = new vscode.EventEmitter<string>();
-    vscode.workspace.onDidChangeTextDocument(e => documentChanged.fire(e.document.getText()));
+    vscode.workspace.onDidChangeTextDocument((e) =>
+      documentChanged.fire(e.document.getText())
+    );
     return documentChanged;
   });
 
   const documentChanges: string[] = [];
-  await documentChangedHandle.addListener(change => {
+  await documentChangedHandle.addListener((change) => {
     documentChanges.push(change);
   });
 
   await evaluateInVSCode(async (vscode, editor) => {
-    await editor.edit(edit => edit.insert(new vscode.Position(0, 0), 'Hello, World!'));
+    await editor.edit((edit) =>
+      edit.insert(new vscode.Position(0, 0), "Hello, World!")
+    );
   }, editorHandle);
 
-  await expect.poll(() => documentChanges).toEqual([
-    'Hello, World!',
-  ]);
+  await expect.poll(() => documentChanges).toEqual(["Hello, World!"]);
 });
-
 ```
+
+# @your-scope/vscode-test-playwright
+
+Playwright test harness for VSCode extensions.
+
+## Install
+
+```sh
+npm install @your-scope/vscode-test-playwright --save-dev
+```
+
+## Usage
+
+```ts
+import { test, expect } from "@your-scope/vscode-test-playwright";
+// ...
+```
+
+## License
+
+MIT

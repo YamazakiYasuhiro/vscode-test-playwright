@@ -148,7 +148,7 @@ function waitForLine(
       addEventListener(rl, "close", reject.bind(null, failError)),
       addEventListener(process, "exit", reject.bind(null, failError)),
       // It is Ok to remove error handler because we did not create process and there is another listener.
-      addEventListener(process, "error", reject.bind(null, failError)),
+      addEventListener(process, "error", reject),
     ];
 
     function onLine(line: string) {

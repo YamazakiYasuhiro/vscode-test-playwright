@@ -1,5 +1,5 @@
 {
-  "name": "vscode-test-playwright",
+  "name": "@mshanemc/vscode-test-playwright",
   "version": "0.0.1-beta2",
   "scripts": {
     "build": "tsc",
