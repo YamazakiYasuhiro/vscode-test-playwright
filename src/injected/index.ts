@@ -176,6 +176,9 @@ export async function run() {
     process.stderr.write(
       `VSCodeTestServer listening on http://localhost:${address.port}${EOL}`
     );
+    console.error(
+      `VSCodeTestServer listening on http://localhost:${address.port}`
+    );
     const ws = await new Promise<WebSocket>((resolve, reject) => {
       wsServer.once("connection", resolve);
       wsServer.once("error", reject);

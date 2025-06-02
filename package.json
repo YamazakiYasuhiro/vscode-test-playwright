@@ -1,6 +1,6 @@
 {
   "name": "@mshanemc/vscode-test-playwright",
-  "version": "0.0.1-beta3",
+  "version": "0.0.1-beta4",
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",

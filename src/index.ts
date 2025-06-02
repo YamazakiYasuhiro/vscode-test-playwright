@@ -221,7 +221,7 @@ export const test = base.extend<
               ]),
             ],
             {
-              stdio: "inherit",
+              // stdio: "pipe",
               shell: os.platform() === "win32",
             }
           );
