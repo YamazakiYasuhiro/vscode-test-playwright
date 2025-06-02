@@ -179,12 +179,14 @@ export async function run() {
     console.error(
       `VSCodeTestServer listening on http://localhost:${address.port}`
     );
+
     const ws = await new Promise<WebSocket>((resolve, reject) => {
       wsServer.once("connection", resolve);
       wsServer.once("error", reject);
     });
     const testServer = new VSCodeTestServer(ws);
     await testServer.run();
+  } catch (e) {
   } finally {
     wsServer.close();
     server.close();
