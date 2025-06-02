@@ -152,6 +152,7 @@ function waitForLine(
     ];
 
     function onLine(line: string) {
+      console.log("line", line);
       const match = line.match(regex);
       if (!match) return;
       cleanup();
@@ -361,8 +362,14 @@ export const test = base.extend<
     const recentLogs =
       electronAppImpl._nodeConnection._browserLogsCollector.recentLogs() as string[];
     let [match] = recentLogs
-      .map((s) => s.trim().match(vscodeTestServerRegExp))
+      .map((s) => s.trim())
+      .map((s) => {
+        console.log(s);
+        return s;
+      })
+      .map((s) => s.match(vscodeTestServerRegExp))
       .filter(Boolean);
+    console.log("match", match);
     if (!match) {
       match = await waitForLine(process, vscodeTestServerRegExp);
     }
