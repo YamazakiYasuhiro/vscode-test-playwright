@@ -1,6 +1,8 @@
 {
   "name": "@mshanemc/vscode-test-playwright",
-  "version": "0.0.1-beta8",
+  "version": "0.0.1-beta12",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",

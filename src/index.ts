@@ -201,23 +201,48 @@ export const test = base.extend<
         version: vscodeVersion,
       });
 
+      let installDir = installPath;
+      try {
+        const stat = await fs.promises.stat(installPath);
+        if (stat.isFile()) {
+          installDir = path.dirname(installPath);
+        }
+      } catch (e) {
+        // ignore
+      }
+
       // Fix for nested directory structure in some VSCode builds (e.g. Insiders on Windows)
-      const resourcesPath = path.join(installPath, 'resources');
+      const resourcesPath = path.join(installDir, 'resources');
+      console.log(`[VSCODE-TEST] Checking resources path: ${resourcesPath}`);
+      console.log(`[VSCODE-TEST] Exists: ${fs.existsSync(resourcesPath)}`);
+
       if (!fs.existsSync(resourcesPath)) {
-        const entries = await fs.promises.readdir(installPath);
-        for (const entry of entries) {
-          const entryPath = path.join(installPath, entry);
-          if ((await fs.promises.stat(entryPath)).isDirectory()) {
-            if (fs.existsSync(path.join(entryPath, 'resources'))) {
-              const subEntries = await fs.promises.readdir(entryPath);
-              for (const sub of subEntries) {
-                const src = path.join(entryPath, sub);
-                const dst = path.join(installPath, sub);
-                if (!fs.existsSync(dst)) await fs.promises.rename(src, dst);
+        try {
+          console.log(`[VSCODE-TEST] Resources not found in ${installDir}, scanning for nested structure...`);
+          const entries = await fs.promises.readdir(installDir);
+          for (const entry of entries) {
+            const entryPath = path.join(installDir, entry);
+            const stat = await fs.promises.stat(entryPath);
+            if (stat.isDirectory()) {
+              const nestedResources = path.join(entryPath, 'resources');
+              if (fs.existsSync(nestedResources)) {
+                console.log(`[VSCODE-TEST] Found nested resources in: ${entryPath}`);
+                const subEntries = await fs.promises.readdir(entryPath);
+                for (const sub of subEntries) {
+                  const src = path.join(entryPath, sub);
+                  const dst = path.join(installDir, sub);
+                  // Prevent overwriting existing files/dirs
+                  if (!fs.existsSync(dst)) {
+                    console.log(`[VSCODE-TEST] Moving ${sub} to root`);
+                    await fs.promises.rename(src, dst);
+                  }
+                }
+                break;
               }
-              break;
             }
           }
+        } catch (err) {
+          console.error(`[VSCODE-TEST] Error fixing directory structure:`, err);
         }
       }
 
@@ -284,7 +309,7 @@ export const test = base.extend<
       for (const prop in env) {
         if (/^VSCODE_/i.test(prop)) delete env[prop];
       }
-
+      console.log(`[VSCODE-TEST] Launching Electron with executable: ${installPath}`);
       const electronApp = await _electron.launch({
         executablePath: installPath,
         env,
@@ -294,11 +319,14 @@ export const test = base.extend<
           "--no-sandbox",
           // https://github.com/microsoft/vscode-test/issues/221
           "--disable-gpu-sandbox",
+          "--disable-gpu",
+          "--disable-dev-shm-usage",
           // https://github.com/microsoft/vscode-test/issues/120
           "--disable-updates",
           "--skip-welcome",
           "--skip-release-notes",
           "--disable-workspace-trust",
+          "--wait", // Keep process alive for Playwright connection
           `--extensions-dir=${extensionsDir ?? path.join(cachePath, "extensions")
           }`,
           `--user-data-dir=${userDataDir ?? path.join(cachePath, "user-data")}`,
