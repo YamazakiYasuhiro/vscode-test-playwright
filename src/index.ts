@@ -30,14 +30,14 @@ export type VSCodeWorkerOptions = {
   vscodeVersion: string;
   extensions?: string | string[];
   vscodeTrace:
-    | TraceMode
-    | {
-        mode: TraceMode;
-        snapshots?: boolean;
-        screenshots?: boolean;
-        sources?: boolean;
-        attachments?: boolean;
-      };
+  | TraceMode
+  | {
+    mode: TraceMode;
+    snapshots?: boolean;
+    screenshots?: boolean;
+    sources?: boolean;
+    attachments?: boolean;
+  };
   extensionsDir?: string;
   userDataDir?: string;
 };
@@ -102,12 +102,12 @@ function getTraceMode(
     | TraceMode
     | "retry-with-trace"
     | {
-        mode: TraceMode;
-        snapshots?: boolean;
-        screenshots?: boolean;
-        sources?: boolean;
-        attachments?: boolean;
-      }
+      mode: TraceMode;
+      snapshots?: boolean;
+      screenshots?: boolean;
+      sources?: boolean;
+      attachments?: boolean;
+    }
 ) {
   const traceMode = typeof trace === "string" ? trace : trace.mode;
   if (traceMode === "retry-with-trace") return "on-first-retry";
@@ -167,9 +167,9 @@ function waitForLine(
 
 export const test = base.extend<
   VSCodeTestFixtures &
-    VSCodeTestOptions &
-    InternalTestFixtures &
-    ExperimentalVSCodeTestFixtures,
+  VSCodeTestOptions &
+  InternalTestFixtures &
+  ExperimentalVSCodeTestFixtures,
   VSCodeWorkerOptions & InternalWorkerFixtures
 >({
   vscodeVersion: ["insiders", { option: true, scope: "worker" }],
@@ -200,6 +200,27 @@ export const test = base.extend<
         cachePath: installBasePath,
         version: vscodeVersion,
       });
+
+      // Fix for nested directory structure in some VSCode builds (e.g. Insiders on Windows)
+      const resourcesPath = path.join(installPath, 'resources');
+      if (!fs.existsSync(resourcesPath)) {
+        const entries = await fs.promises.readdir(installPath);
+        for (const entry of entries) {
+          const entryPath = path.join(installPath, entry);
+          if ((await fs.promises.stat(entryPath)).isDirectory()) {
+            if (fs.existsSync(path.join(entryPath, 'resources'))) {
+              const subEntries = await fs.promises.readdir(entryPath);
+              for (const sub of subEntries) {
+                const src = path.join(entryPath, sub);
+                const dst = path.join(installPath, sub);
+                if (!fs.existsSync(dst)) await fs.promises.rename(src, dst);
+              }
+              break;
+            }
+          }
+        }
+      }
+
       const [cliPath] = resolveCliArgsFromVSCodeExecutablePath(installPath);
 
       if (extensions) {
@@ -209,11 +230,9 @@ export const test = base.extend<
           const subProcess = cp.spawn(
             cliPath,
             [
-              `--extensions-dir=${
-                extensionsDir ?? path.join(cachePath, "extensions")
+              `--extensions-dir=${extensionsDir ?? path.join(cachePath, "extensions")
               }`,
-              `--user-data-dir=${
-                userDataDir ?? path.join(cachePath, "user-data")
+              `--user-data-dir=${userDataDir ?? path.join(cachePath, "user-data")
               }`,
               ...extensions.flatMap((extension) => [
                 "--install-extension",
@@ -280,8 +299,7 @@ export const test = base.extend<
           "--skip-welcome",
           "--skip-release-notes",
           "--disable-workspace-trust",
-          `--extensions-dir=${
-            extensionsDir ?? path.join(cachePath, "extensions")
+          `--extensions-dir=${extensionsDir ?? path.join(cachePath, "extensions")
           }`,
           `--user-data-dir=${userDataDir ?? path.join(cachePath, "user-data")}`,
           `--extensionTestsPath=${path.join(__dirname, "injected", "index")}`,
@@ -406,7 +424,7 @@ export const test = base.extend<
   },
 
   _createTempDir: [
-    async ({}, use) => {
+    async ({ }, use) => {
       const tempDirs: string[] = [];
       await use(async () => {
         const tempDir = await fs.promises.realpath(
@@ -416,8 +434,8 @@ export const test = base.extend<
         tempDirs.push(tempDir);
         return tempDir;
       });
-      for (const tempDir of tempDirs)
-        await fs.promises.rm(tempDir, { recursive: true });
+      // for (const tempDir of tempDirs)
+      //   await fs.promises.rm(tempDir, { recursive: true });
     },
     { scope: "worker" },
   ],
